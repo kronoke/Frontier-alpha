@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Frontier Alpha',
-  description: 'AI-assisted scientific discovery engine',
+  title: 'Frontier — Make the impossible buildable',
+  description: 'An ambition-to-reality engine that works backward from what you want to exist and maps a path toward building it.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
