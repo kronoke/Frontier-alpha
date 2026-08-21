@@ -82,11 +82,11 @@ async function executePlan(plan: DevPlan) {
       if (slash > 0) {
         const dir = file.path.slice(0, slash);
         const mkdir = await sandbox.runCommand(`mkdir -p '${dir}'`);
-        if (mkdir.exitCode !== 0) throw new Error(`Could not create directory ${dir}: ${mkdir.stderr}`);
+        if (mkdir.exitCode !== 0) throw new Error(`Could not create directory ${dir}: ${await mkdir.stderr()}`);
       }
       const encoded = Buffer.from(file.content, 'utf8').toString('base64');
       const write = await sandbox.runCommand(`printf '%s' '${encoded}' | base64 -d > '${file.path}'`);
-      if (write.exitCode !== 0) throw new Error(`Could not write ${file.path}: ${write.stderr}`);
+      if (write.exitCode !== 0) throw new Error(`Could not write ${file.path}: ${await write.stderr()}`);
     }
 
     for (const cmd of plan.commands) {
@@ -95,8 +95,8 @@ async function executePlan(plan: DevPlan) {
       results.push({
         ...cmd,
         exitCode: result.exitCode,
-        stdout: trimOutput(result.stdout),
-        stderr: trimOutput(result.stderr),
+        stdout: trimOutput(await result.stdout()),
+        stderr: trimOutput(await result.stderr()),
         durationMs: Date.now() - started,
       });
     }
@@ -105,7 +105,7 @@ async function executePlan(plan: DevPlan) {
     return {
       sandboxId: sandbox.sandboxId,
       filesWritten: plan.files.map(f => f.path),
-      fileListing: trimOutput(listing.stdout, 6000),
+      fileListing: trimOutput(await listing.stdout(), 6000),
       commands: results,
       testsPassed: results.filter(r => r.kind === 'test').every(r => r.exitCode === 0),
       buildsPassed: results.filter(r => r.kind === 'build').every(r => r.exitCode === 0),
@@ -121,7 +121,7 @@ export async function GET() {
   try {
     sandbox = await Sandbox.create({ runtime: 'node24', timeout: 60000 });
     const result = await sandbox.runCommand("node -e \"console.log('frontier-sandbox-ok')\"");
-    return NextResponse.json({ ok: result.exitCode === 0, sandboxId: sandbox.sandboxId, stdout: result.stdout, stderr: result.stderr });
+    return NextResponse.json({ ok: result.exitCode === 0, sandboxId: sandbox.sandboxId, stdout: await result.stdout(), stderr: await result.stderr() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Sandbox self-test failed' }, { status: 500 });
   } finally {
