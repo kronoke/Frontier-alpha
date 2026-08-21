@@ -1,97 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-type System = {
-  name: string;
-  level: number;
-  status: string;
-  ceiling: string;
-  route: string;
-};
+type System={name:string;level:number;status:string;ceiling:string;route:string};
+type Step={title:string;instruction:string;doneWhen:string};
+type NextMove={title:string;why:string;time:string;difficulty:string;cost:string;stack:string[];prerequisites:string[];steps:Step[]};
+type Result={ambition:string;northStar:string;reality:string;mode:string;systems:System[];bottlenecks:{title:string;why:string;attack:string}[];wildcards:{title:string;idea:string;payoff:string}[];prototype:{name:string;goal:string;build:string[];success:string[]};roadmap:{phase:string;objective:string;unlock:string}[];nextMove:NextMove};
 
-type Result = {
-  ambition: string;
-  northStar: string;
-  reality: string;
-  mode: string;
-  systems: System[];
-  bottlenecks: { title: string; why: string; attack: string }[];
-  wildcards: { title: string; idea: string; payoff: string }[];
-  prototype: { name: string; goal: string; build: string[]; success: string[] };
-  roadmap: { phase: string; objective: string; unlock: string }[];
-};
+const examples=['Build a VR MMO that feels like another life','Create an Iron Man-style augmented reality HUD','Let one person operate a billion-dollar company with AI','Build a game where every NPC has a persistent life'];
+const loadingStages=['Defining the north star…','Mapping current technology…','Finding the hardest bottlenecks…','Exploring unconventional routes…','Choosing your first build…'];
+function levelLabel(level:number){return['','Available now','Novel integration','Experimental','Breakthrough','Speculative'][level]||'Unknown'}
 
-const examples = [
-  'Build a VR MMO that feels like another life',
-  'Create an Iron Man-style augmented reality HUD',
-  'Let one person operate a billion-dollar company with AI',
-  'Build a game where every NPC has a persistent life',
-];
-
-function levelLabel(level: number) {
-  return ['','Available now','Novel integration','Experimental','Breakthrough','Speculative'][level] || 'Unknown';
-}
-
-export default function Home() {
-  const [ambition, setAmbition] = useState('Build a VR MMO that feels like another life');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
-  const [error, setError] = useState('');
-
-  async function explore() {
-    if (!ambition.trim()) return;
-    setLoading(true); setError('');
-    try {
-      const res = await fetch('/api/discover', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ambition }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Frontier could not analyze this ambition.');
-      setResult(data);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Analysis failed'); }
-    finally { setLoading(false); }
-  }
-
-  return (
-    <main className="shell">
-      <nav><div className="brand"><span className="mark">F</span> FRONTIER</div><div className="alpha">ALPHA 0.2</div></nav>
-      <section className="hero">
-        <div className="eyebrow">Ambition → reality</div>
-        <h1>What do you want to <em>make possible?</em></h1>
-        <p>Don’t make the idea realistic. Give Frontier the version you actually want. It will work backward from the edge of what humans can do until there is something we can build today.</p>
-      </section>
-
-      <section className="command">
-        <textarea value={ambition} onChange={e=>setAmbition(e.target.value)} placeholder="I want to…" rows={3}/>
-        <div className="commandFooter"><span>Think bigger than a normal product brief.</span><button onClick={explore} disabled={loading || !ambition.trim()}>{loading ? 'Mapping the frontier…' : 'Push the frontier →'}</button></div>
-      </section>
-
-      <div className="examples">{examples.map(x=><button key={x} onClick={()=>setAmbition(x)}>{x}</button>)}</div>
-      {error && <div className="error">{error}</div>}
-
-      {result && <section className="results">
-        <div className="missionHeader"><div><div className="eyebrow">Mission brief · {result.mode}</div><h2>{result.northStar}</h2></div><div className="statusDot">ACTIVE</div></div>
-        <div className="reality"><span>Current reality</span><p>{result.reality}</p></div>
-
-        <div className="sectionHead"><span>01</span><h3>The systems that must exist</h3></div>
-        <div className="systemGrid">{result.systems.map((s,i)=><article className="system" key={i}>
-          <div className="systemTop"><h4>{s.name}</h4><span className={`level l${s.level}`}>L{s.level} · {levelLabel(s.level)}</span></div>
-          <p><b>Human ceiling:</b> {s.ceiling}</p><p><b>Frontier route:</b> {s.route}</p><div className="systemStatus">{s.status}</div>
-        </article>)}</div>
-
-        <div className="sectionHead"><span>02</span><h3>Attack the bottlenecks</h3></div>
-        <div className="rows">{result.bottlenecks.map((b,i)=><article className="row" key={i}><div className="number">0{i+1}</div><div><h4>{b.title}</h4><p>{b.why}</p><div className="attack">↳ {b.attack}</div></div></article>)}</div>
-
-        <div className="sectionHead"><span>03</span><h3>Unconventional routes</h3></div>
-        <div className="wildGrid">{result.wildcards.map((w,i)=><article className="wild" key={i}><div className="eyebrow">Wildcard {String(i+1).padStart(2,'0')}</div><h4>{w.title}</h4><p>{w.idea}</p><strong>{w.payoff}</strong></article>)}</div>
-
-        <div className="sectionHead"><span>04</span><h3>Build this first</h3></div>
-        <article className="prototype"><div><div className="eyebrow">Frontier prototype</div><h3>{result.prototype.name}</h3><p>{result.prototype.goal}</p></div><div><h5>BUILD</h5><ol>{result.prototype.build.map(x=><li key={x}>{x}</li>)}</ol></div><div><h5>SUCCESS MEANS</h5><ul>{result.prototype.success.map(x=><li key={x}>{x}</li>)}</ul></div></article>
-
-        <div className="sectionHead"><span>05</span><h3>Path toward the impossible version</h3></div>
-        <div className="roadmap">{result.roadmap.map((r,i)=><div className="road" key={i}><div className="roadPhase">{r.phase}</div><div><strong>{r.objective}</strong><p>{r.unlock}</p></div></div>)}</div>
-      </section>}
-
-      <footer>Frontier does not assume ambitious ideas are achievable. It separates current capability, plausible engineering, required breakthroughs, and speculation so each claim can be tested instead of hand-waved.</footer>
-    </main>
-  );
+export default function Home(){
+ const[ambition,setAmbition]=useState('Build a VR MMO that feels like another life');
+ const[loading,setLoading]=useState(false);const[loadingIndex,setLoadingIndex]=useState(0);const[result,setResult]=useState<Result|null>(null);const[error,setError]=useState('');
+ const[buildMode,setBuildMode]=useState(false);const[currentStep,setCurrentStep]=useState(0);const[done,setDone]=useState<number[]>([]);const[expanded,setExpanded]=useState<number|null>(0);
+ useEffect(()=>{if(!loading)return;setLoadingIndex(0);const id=setInterval(()=>setLoadingIndex(i=>Math.min(i+1,loadingStages.length-1)),6500);return()=>clearInterval(id)},[loading]);
+ async function explore(){if(!ambition.trim())return;setLoading(true);setError('');setResult(null);setBuildMode(false);setDone([]);setCurrentStep(0);try{const res=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ambition})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Frontier could not analyze this ambition.');setResult(data)}catch(e){setError(e instanceof Error?e.message:'Analysis failed')}finally{setLoading(false)}}
+ function toggleDone(i:number){setDone(d=>d.includes(i)?d.filter(x=>x!==i):[...d,i]);if(!done.includes(i)&&i===currentStep&&result&&i<result.nextMove.steps.length-1)setCurrentStep(i+1)}
+ function startBuild(){setBuildMode(true);setTimeout(()=>document.getElementById('build-mode')?.scrollIntoView({behavior:'smooth'}),50)}
+ return <main className="shell">
+  <nav><div className="brand"><span className="mark">F</span> FRONTIER</div><div className="alpha">ALPHA 0.3</div></nav>
+  <section className="hero"><div className="eyebrow">Ambition → reality → action</div><h1>What do you want to <em>make possible?</em></h1><p>Don’t make the idea realistic. Give Frontier the version you actually want. It will work backward from the edge of what humans can do, then tell you exactly what to build first.</p></section>
+  <section className="command"><textarea value={ambition} onChange={e=>setAmbition(e.target.value)} placeholder="I want to…" rows={3}/><div className="commandFooter"><span>{loading?loadingStages[loadingIndex]:'Think bigger than a normal product brief.'}</span><button onClick={explore} disabled={loading||!ambition.trim()}>{loading?'Working…':'Push the frontier →'}</button></div>{loading&&<div className="progress"><span style={{width:`${(loadingIndex+1)/loadingStages.length*100}%`}}/></div>}</section>
+  <div className="examples">{examples.map(x=><button key={x} onClick={()=>setAmbition(x)}>{x}</button>)}</div>{error&&<div className="error">{error}</div>}
+  {result&&<section className="results">
+   <div className="missionHeader"><div><div className="eyebrow">Mission brief · {result.mode}</div><h2>{result.northStar}</h2></div><div className="statusDot">ACTIVE</div></div>
+   <div className="reality"><span>Current reality</span><p>{result.reality}</p></div>
+   <div className="sectionHead"><span>01</span><h3>The systems that must exist</h3></div><div className="systemGrid">{result.systems.map((s,i)=><article className="system" key={i}><div className="systemTop"><h4>{s.name}</h4><span className={`level l${s.level}`}>L{s.level} · {levelLabel(s.level)}</span></div><p><b>Human ceiling:</b> {s.ceiling}</p><p><b>Frontier route:</b> {s.route}</p><div className="systemStatus">{s.status}</div></article>)}</div>
+   <div className="sectionHead"><span>02</span><h3>Attack the bottlenecks</h3></div><div className="rows">{result.bottlenecks.map((b,i)=><article className="row" key={i}><div className="number">0{i+1}</div><div><h4>{b.title}</h4><p>{b.why}</p><div className="attack">↳ {b.attack}</div></div></article>)}</div>
+   <div className="sectionHead"><span>03</span><h3>Unconventional routes</h3></div><div className="wildGrid">{result.wildcards.map((w,i)=><article className="wild" key={i}><div className="eyebrow">Wildcard {String(i+1).padStart(2,'0')}</div><h4>{w.title}</h4><p>{w.idea}</p><strong>{w.payoff}</strong></article>)}</div>
+   <div className="sectionHead"><span>04</span><h3>Your next move</h3></div>
+   <article className="nextMove"><div className="nextLead"><div className="eyebrow">Do this now</div><h3>{result.nextMove.title}</h3><p>{result.nextMove.why}</p><button className="primary" onClick={startBuild}>Start building this →</button></div><div className="facts"><div><span>TIME</span><b>{result.nextMove.time}</b></div><div><span>DIFFICULTY</span><b>{result.nextMove.difficulty}</b></div><div><span>COST</span><b>{result.nextMove.cost}</b></div><div><span>STACK</span><b>{result.nextMove.stack.join(' · ')}</b></div></div><div className="prereqs"><span>BEFORE YOU START</span><ul>{result.nextMove.prerequisites.map(x=><li key={x}>{x}</li>)}</ul></div></article>
+   {buildMode&&<section id="build-mode" className="buildMode"><div className="buildHeader"><div><div className="eyebrow">Build Mode</div><h2>{result.nextMove.title}</h2><p>Finish one step at a time. Frontier keeps the big vision in view, but your job is only the current step.</p></div><div className="buildProgress">{done.length}/{result.nextMove.steps.length} done</div></div><div className="stepList">{result.nextMove.steps.map((s,i)=>{const isDone=done.includes(i);const active=i===currentStep;return <article className={`buildStep ${active?'active':''} ${isDone?'done':''}`} key={i}><button className="stepTop" onClick={()=>{setCurrentStep(i);setExpanded(expanded===i?null:i)}}><span className="stepNum">{isDone?'✓':String(i+1).padStart(2,'0')}</span><div><small>{active&&!isDone?'DO THIS NOW':isDone?'COMPLETE':'UP NEXT'}</small><h4>{s.title}</h4></div><span className="chev">{expanded===i?'−':'+'}</span></button>{expanded===i&&<div className="stepBody"><p>{s.instruction}</p><div className="doneWhen"><span>YOU'RE DONE WHEN</span>{s.doneWhen}</div><div className="stepActions"><button onClick={()=>toggleDone(i)}>{isDone?'Mark incomplete':'I did this ✓'}</button>{!isDone&&i>0&&<button className="secondary" onClick={()=>setCurrentStep(i-1)}>Previous step</button>}</div></div>}</article>})}</div></section>}
+   <div className="sectionHead"><span>05</span><h3>Why this first build matters</h3></div><article className="prototype"><div><div className="eyebrow">Frontier prototype</div><h3>{result.prototype.name}</h3><p>{result.prototype.goal}</p></div><div><h5>BUILD</h5><ol>{result.prototype.build.map(x=><li key={x}>{x}</li>)}</ol></div><div><h5>SUCCESS MEANS</h5><ul>{result.prototype.success.map(x=><li key={x}>{x}</li>)}</ul></div></article>
+   <div className="sectionHead"><span>06</span><h3>Path toward the impossible version</h3></div><div className="roadmap">{result.roadmap.map((r,i)=><div className="road" key={i}><div className="roadPhase">{r.phase}</div><div><strong>{r.objective}</strong><p>{r.unlock}</p></div></div>)}</div>
+  </section>}
+  <footer>Frontier separates current capability, plausible engineering, required breakthroughs, and speculation — then converts the analysis into the next experiment you can actually execute.</footer>
+ </main>
 }
