@@ -103,7 +103,6 @@ async function executePlan(plan: DevPlan) {
 
     const listing = await sandbox.runCommand("find . -maxdepth 3 -type f -not -path './node_modules/*' | sort | head -80");
     return {
-      sandboxId: sandbox.sandboxId,
       filesWritten: plan.files.map(f => f.path),
       fileListing: trimOutput(await listing.stdout(), 6000),
       commands: results,
@@ -121,7 +120,7 @@ export async function GET() {
   try {
     sandbox = await Sandbox.create({ runtime: 'node24', timeout: 60000 });
     const result = await sandbox.runCommand("node -e \"console.log('frontier-sandbox-ok')\"");
-    return NextResponse.json({ ok: result.exitCode === 0, sandboxId: sandbox.sandboxId, stdout: await result.stdout(), stderr: await result.stderr() });
+    return NextResponse.json({ ok: result.exitCode === 0, stdout: await result.stdout(), stderr: await result.stderr() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Sandbox self-test failed' }, { status: 500 });
   } finally {
